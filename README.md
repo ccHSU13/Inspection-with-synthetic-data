@@ -1,1 +1,1 @@
-# Inspection-with-synthetic-data
+# Inspection with Synthetic Data
