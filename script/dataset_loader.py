@@ -28,9 +28,10 @@ class CocoDataset(data.Dataset):
         ann_id = self.ids[index]
         # print(coco.anns[ann_id])
 
-        labels = coco.anns[ann_id]['category_id']
-        boxes = coco.anns[ann_id]['bbox']
-        area = coco.anns[ann_id]['area']
+        labels = [coco.anns[ann_id]['category_id']]
+        x, y, w, h = coco.anns[ann_id]['bbox']
+        boxes = [[x, y, x+w+1, y+h+1]]
+        area = [coco.anns[ann_id]['area']]
         img_id = coco.anns[ann_id]['image_id']
         iscrowd = torch.zeros(1, dtype=torch.int64)
 
@@ -87,39 +88,34 @@ class DefectDataset(torch.utils.data.Dataset):
             g = int(mask[y + h//2, x+w//2][1])
             r = int(mask[y + h//2, x+w//2][2])
 
-            # # red -> crack
-            # if r-g > 70 and r-b > 70:
-            #     # boxes.append([x,y,x+w,y+h])
-            #     labels.append(1)
+            boxes.append([x,y,x+w,y+h])
+            # red -> crack
+            if r-g > 70 and r-b > 70:
+                labels.append(1)
 
-            # # green -> efflorescence
-            # if g-r > 70 and g-b > 70:
-            #     labels.append(2)
-            #     # boxes.append([x,y,x+w,y+h])
-            #     # labels.append(1)
+            # green -> efflorescence
+            elif g-r > 70 and g-b > 70:
+                labels.append(2)
 
             # white -> spalling
-            if g-r < 10 and r-b < 10:
-                boxes.append([x, y, x+w, y+h])
+            elif g-r < 10 and r-b < 10:
+                labels.append(3)
+
+            # Blue -> exposed rebar
+            elif b -g >70 and b-r > 70:
+                labels.append(4)
+
+            # Yellow -> crack & efflorescence
+            elif g-b > 70 and r-b > 70:
+                labels.append(2)
+                boxes.append([x,y,x+w,y+h])
                 labels.append(1)
-                # boxes.append([x,y,x+w,y+h])
-                # labels.append(1)
 
-            # # Blue -> exposed rebar
-            # elif b -g >70 and b-r > 70:
-            #     labels.append(4)
-
-            # # Yellow -> crack & efflorescence
-            # elif g-b > 70 and r-b > 70:
-            #     labels.append(2)
-            #     boxes.append([x,y,x+w,y+h])
-            #     labels.append(1)
-
-            # # Cyan -> exposed rebar & spalling
-            # elif b-r > 70 and g-r > 70:
-            #     labels.append(4)
-            #     boxes.append([x,y,x+w,y+h])
-            #     labels.append(3)
+            # Cyan -> exposed rebar & spalling
+            elif b-r > 70 and g-r > 70:
+                labels.append(4)
+                boxes.append([x,y,x+w,y+h])
+                labels.append(3)
 
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
         # there are four classes: Spalling/Exposed rebar/Efflorescence/Crack
